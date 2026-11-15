@@ -1,0 +1,8 @@
+{
+  "name": "Example pack",
+  "questions": [
+    { "this": "Beach", "that": "Mountains" },
+    { "this": "Tea", "that": "Kava", "prompt": "Tonight:" },
+    { "this": "Sunrise", "that": "Sunset", "thisImage": "sunrise.jpg", "thatImage": "https://example.com/sunset.jpg" }
+  ]
+}
