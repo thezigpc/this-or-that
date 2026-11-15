@@ -294,6 +294,13 @@ function Dashboard({ token, onSignOut, onExpired }: { token: string; onSignOut: 
           <input type="checkbox" checked={d.streaks} onChange={(e) => void setDefaults({ streaks: e.target.checked })} />
           <span>Streaks</span>
         </label>
+        <label className="row">
+          <span>A tie for first (with scoring)</span>
+          <select value={d.ties} onChange={(e) => void setDefaults({ ties: e.target.value as RoomSettings["ties"] })}>
+            <option value="share">Everyone tied wins</option>
+            <option value="one">One winner (longest streak, then fastest votes)</option>
+          </select>
+        </label>
         <fieldset className="packs">
           <legend>Packs</legend>
           {data.packs.map((p) => (

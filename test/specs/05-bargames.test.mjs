@@ -160,6 +160,39 @@ describe("on a box", () => {
     );
   });
 
+  test("ties: one winner: a single winner event with the tiebreak, places 1, 2, 3 in the results", async () => {
+    const { code, host, players } = await setupRoom(server, ["Ann", "Bo", "Cy"]);
+    await host.ok("updateSettings", { scoring: true, ties: "one", rounds: 4 });
+    await host.ok("start");
+    for (const votes of [
+      ["a", "a", "b"],
+      ["a", "a", "b"],
+      ["a", "b", "a"],
+      ["a", "b", "b"],
+    ]) {
+      await players[0].waitFor((s) => s.phase === "question");
+      for (let i = 0; i < 3; i++) await players[i].ok("vote", votes[i]);
+      await host.waitFor((s) => s.phase === "reveal");
+      await host.ok("next");
+    }
+    const over = await core.waitFor((e) => e.type === "game_over" && e.roomCode === code, "game_over");
+    assert.deepEqual(over.data.winners, ["Ann"]);
+    assert.deepEqual(
+      core.of("winner", code).map((e) => e.data),
+      [{ name: "Ann", score: 3, tiebreak: "streak" }],
+    );
+    await sleep(200);
+    const res = core.results.find((r) => r.roomCode === code);
+    assert.deepEqual(
+      res.results.map((r) => [r.player.name, r.place, r.score]),
+      [
+        ["Ann", 1, 3],
+        ["Bo", 2, 3],
+        ["Cy", 3, 2],
+      ],
+    );
+  });
+
   test("first joiner hosts, and the offer closes when staff open the host link first", async () => {
     const made = await cmd("create_room", undefined, { kind: "venue", firstJoinerHosts: true });
     const code = made.data.roomCode;

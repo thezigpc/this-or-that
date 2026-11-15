@@ -1,7 +1,7 @@
 import { isOnBox, joinDisplay } from "@bargames/sdk/client";
 import { JoinAddress } from "@bargames/gamekit/client";
 import { percent, type Choice, type RoomView, type RoundResult } from "@thisorthat/shared";
-import { Countdown, QrCode, quip, Scoreboard, secondsLeft, SideImage, SplitBar, useTick } from "../components/bits";
+import { Countdown, outcomeText, QrCode, quip, Scoreboard, secondsLeft, SideImage, SplitBar, useTick } from "../components/bits";
 import { toggleFullscreen } from "../fullscreen";
 import { useGameName } from "../useGameName";
 import { useVenue } from "../useVenue";
@@ -143,8 +143,10 @@ function TvQuestion({ view, skew }: { view: RoomView; skew: number }) {
 /** Closest to 50/50, and the most one-sided, among questions with at least 2 votes. */
 function highlights(history: RoundResult[]) {
   const voted = history.filter((h) => h.tally.total >= 2);
+  if (voted.length < 2) return {};
   const lean = (h: RoundResult) => Math.abs(h.tally.a - h.tally.b) / h.tally.total;
-  const divisive = [...voted].sort((x, y) => lean(x) - lean(y))[0];
+  const closest = [...voted].sort((x, y) => lean(x) - lean(y))[0]!;
+  const divisive = lean(closest) < 1 ? closest : undefined; // a unanimous question isn't divisive
   const unanimous = [...voted].sort((x, y) => lean(y) - lean(x))[0];
   return { divisive, unanimous: unanimous && unanimous !== divisive ? unanimous : undefined };
 }
@@ -161,9 +163,11 @@ function TvOver({ view }: { view: RoomView }) {
       </>
     );
   };
+  const won = outcomeText(view);
   return (
     <div className="tv-over">
-      <h1 className="tv-headline">That's a wrap!</h1>
+      <h1 className="tv-headline">{won ? won.title : "That's a wrap!"}</h1>
+      {won?.note && <p className="tv-sub tv-tiebreak">{won.note}</p>}
       {s.scoring && view.players.length > 0 ? (
         <div className="tv-final">
           <p className="tv-sub">Best at reading the room</p>

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { JoinAddress } from "@bargames/gamekit/client";
 import { joinDisplay, joinUrl } from "@bargames/sdk/client";
 import { AUTO_NEXT_CHOICES, ROUND_CHOICES, TIMER_CHOICES, type Choice, type RoomSettings, type RoomView } from "@thisorthat/shared";
-import { QrCode, resizeImage, Scoreboard, secondsLeft, SplitBar, useTick } from "../components/bits";
+import { Outcome, QrCode, resizeImage, Scoreboard, secondsLeft, SplitBar, useTick } from "../components/bits";
 import { call, slowCall } from "../socket";
 import { setSettingsDefault } from "../session";
 import { useVenue } from "../useVenue";
@@ -94,6 +94,7 @@ function GamePanel({ view, skew, act }: { view: RoomView; skew: number; act: Act
         <>
           <h2>Game over</h2>
           <p className="muted">{view.history.length} questions.</p>
+          <Outcome view={view} />
           {s.scoring && <Scoreboard players={view.players} scoring streaks={s.streaks} limit={10} />}
           <button className="btn btn-primary btn-big" onClick={() => act("start")}>
             Play again
@@ -236,6 +237,18 @@ function SettingsPanel({ view, act }: { view: RoomView; act: Act }) {
           <small className="muted">🔥 for picking with the majority several times in a row.</small>
         </span>
       </label>
+      {s.scoring && (
+        <label className="row">
+          <span>
+            A tie for first
+            <small className="muted">{s.ties === "one" ? "Tiebreaks: the longest streak, then the fastest votes." : "Everyone tied on the top score wins."}</small>
+          </span>
+          <select value={s.ties} onChange={(e) => void set({ ties: e.target.value as RoomSettings["ties"] })}>
+            <option value="share">Everyone tied wins</option>
+            <option value="one">One winner</option>
+          </select>
+        </label>
+      )}
       <fieldset className="packs">
         <legend>Question packs</legend>
         {view.packs.map((p) => (

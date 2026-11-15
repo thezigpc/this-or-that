@@ -15,7 +15,9 @@ don't edit it):
 - `server/src/rooms/Room.ts`: the state machine `lobby → question → reveal → … → over`.
   Timers go through the kit's `safeTimeout`. Votes can change until voting closes; everyone
   connected voting reveals after `ALL_VOTED_GRACE_MS`. Scoring: a tie counts for both sides;
-  not voting breaks a streak. The live split goes to TVs and hosts only while scoring is off.
+  not voting breaks a streak. `Room.ranking()` is the one place that orders players: the
+  `ties` setting (`share`: 1, 1, 3; `one`: streak, then voting speed, then join order) drives
+  scoreboard places, winners and the box results. The live split goes to TVs and hosts only while scoring is off.
 - `server/src/content.ts`: the venue's packs (`DATA_DIR/packs`) and pictures
   (`DATA_DIR/media`, png/jpeg/gif/webp by magic bytes, never SVG). Live-question pictures
   stay in memory per room (`/media/room/<code>/<id>`).

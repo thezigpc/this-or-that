@@ -23,6 +23,7 @@ import {
   type ScoreLine,
   type Side,
   type Tally,
+  type Tiebreak,
 } from "@thisorthat/shared";
 import { HostSeats, cryptoRand, log, newId, newToken, safeTimeout, type CloseCause, type KitRoom, type RoomOverview, type SessionKind } from "@bargames/gamekit/server";
 import { bg } from "../bargames.js";
@@ -41,6 +42,8 @@ export interface Member {
   bestStreak: number;
   /** Questions this member voted on this game (runners show on the board once they vote). */
   votedRounds: number;
+  /** Total ms from question up to the final vote, on questions this member got right (a tiebreak). */
+  speedMs: number;
   joinedAt: number;
 }
 
@@ -104,6 +107,10 @@ export class Room implements KitRoom {
   result?: RoundResult;
   history: RoundResult[] = [];
   private readonly votes = new Map<string, Choice>();
+  /** When each vote (its latest change) came in. */
+  private readonly voteAt = new Map<string, number>();
+  /** When the current question went up. */
+  private questionAt = 0;
   /** The packs' questions not asked yet, shuffled. */
   private deck: Question[] = [];
   /** Questions the host typed, asked before the deck. */
@@ -231,7 +238,7 @@ export class Room implements KitRoom {
   }
 
   private newMember(role: Role, name: string): Member {
-    const m: Member = { id: newId(), token: newToken(), role, name, socketIds: new Set(), score: 0, streak: 0, bestStreak: 0, votedRounds: 0, joinedAt: Date.now() };
+    const m: Member = { id: newId(), token: newToken(), role, name, socketIds: new Set(), score: 0, streak: 0, bestStreak: 0, votedRounds: 0, speedMs: 0, joinedAt: Date.now() };
     this.members.set(m.id, m);
     return m;
   }
@@ -255,6 +262,7 @@ export class Room implements KitRoom {
     for (const sid of m.socketIds) this.transport.sendClosed(sid, reason);
     this.members.delete(memberId);
     this.votes.delete(memberId);
+    this.voteAt.delete(memberId);
     this.seats.removeCohost(memberId);
     if (m.role === "player") this.playersChanged();
   }
@@ -403,6 +411,7 @@ export class Room implements KitRoom {
       m.streak = 0;
       m.bestStreak = 0;
       m.votedRounds = 0;
+      m.speedMs = 0;
     }
     this.buildDeck();
     if (!this.queue.length && !this.deck.length) throw new GameError("NO_QUESTIONS");
@@ -431,10 +440,11 @@ export class Room implements KitRoom {
     this.question = q;
     this.asked.add(q.id);
     this.result = undefined;
-    this.votes.clear();
+    this.clearVotes();
     this.phase = "question";
     const ms = this.settings.timerSeconds * 1000;
-    this.endsAt = Date.now() + ms;
+    this.questionAt = Date.now();
+    this.endsAt = this.questionAt + ms;
     this.voteTimer = this.timer("vote", ms, () => this.reveal());
     this.emit("round_started", { round: this.round, question: label(q) });
   }
@@ -446,6 +456,7 @@ export class Room implements KitRoom {
     if (!m || m.role === "table") throw new GameError("BAD_REQUEST");
     this.touch();
     this.votes.set(memberId, choice);
+    this.voteAt.set(memberId, Date.now());
     // Everyone who can vote has: reveal after a short beat (votes can still change in it).
     clearTimeout(this.allVotedTimer);
     this.allVotedTimer = undefined;
@@ -479,7 +490,10 @@ export class Room implements KitRoom {
       if (c) m.votedRounds++;
       // Guess the majority: a tie counts for both sides. Not voting breaks a streak.
       const right = !!c && (majority === "tie" || c === majority);
-      if (this.settings.scoring && right) m.score++;
+      if (this.settings.scoring && right) {
+        m.score++;
+        m.speedMs += Math.max(0, (this.voteAt.get(m.id) ?? this.questionAt) - this.questionAt);
+      }
       m.streak = right ? m.streak + 1 : 0;
       m.bestStreak = Math.max(m.bestStreak, m.streak);
     }
@@ -502,7 +516,7 @@ export class Room implements KitRoom {
     if (this.phase === "reveal") return this.askNext();
     if (this.phase !== "question") throw new GameError("WRONG_PHASE");
     this.clearTimers();
-    this.votes.clear();
+    this.clearVotes();
     this.round--;
     this.question = undefined;
     this.askNext();
@@ -516,12 +530,46 @@ export class Room implements KitRoom {
     this.finish();
   }
 
-  /** Who won (scoring on): everyone tied on the top score, if anyone scored. */
+  private clearVotes(): void {
+    this.votes.clear();
+    this.voteAt.clear();
+  }
+
+  /**
+   * Everyone on the board, best first, with their place under the room's tie rule.
+   * - "share": places by score alone, competition ranking (1, 1, 3).
+   * - "one": score, then the longest streak, then the fastest total voting time on the
+   *   questions they got right; whoever joined first breaks a dead heat. Only one place 1.
+   */
+  ranking(): { member: Member; place: number }[] {
+    const list = this.scoreboardMembers();
+    if (this.settings.ties === "share") {
+      list.sort((a, b) => b.score - a.score || b.bestStreak - a.bestStreak || a.joinedAt - b.joinedAt);
+      return list.map((m) => ({ member: m, place: 1 + list.filter((o) => o.score > m.score).length }));
+    }
+    const better = (a: Member, b: Member) => b.score - a.score || b.bestStreak - a.bestStreak || a.speedMs - b.speedMs;
+    list.sort((a, b) => better(a, b) || a.joinedAt - b.joinedAt);
+    return list.map((m, i) => {
+      const place = 1 + list.filter((o) => better(o, m) < 0).length;
+      return { member: m, place: place === 1 && i > 0 ? 2 : place };
+    });
+  }
+
+  /** Who won (scoring on, someone scored): everyone on place 1. */
   winners(): Member[] {
     if (!this.settings.scoring) return [];
-    const scored = this.scoreboardMembers();
-    const top = Math.max(0, ...scored.map((m) => m.score));
-    return top > 0 ? scored.filter((m) => m.score === top) : [];
+    return this.ranking()
+      .filter((r) => r.place === 1 && r.member.score > 0)
+      .map((r) => r.member);
+  }
+
+  /** ties "one": what separated the winner from the runner-up on the same score. */
+  private tiebreak(): Tiebreak | undefined {
+    if (this.settings.ties !== "one") return undefined;
+    const [first, second] = this.ranking().map((r) => r.member);
+    if (!first || !second || first.score !== second.score || first.score === 0) return undefined;
+    if (first.bestStreak !== second.bestStreak) return "streak";
+    return first.speedMs !== second.speedMs ? "speed" : "joined";
   }
 
   private finish(): void {
@@ -530,14 +578,16 @@ export class Room implements KitRoom {
     this.question = undefined;
     this.endsAt = undefined;
     this.nextAt = undefined;
-    this.votes.clear();
+    this.clearVotes();
     const winners = this.winners();
-    for (const w of winners) this.emit("winner", { name: w.name, score: w.score });
+    const tiebreak = this.tiebreak();
+    for (const w of winners) this.emit("winner", { name: w.name, score: w.score, ...(tiebreak ? { tiebreak } : {}) });
     this.emit("game_over", { rounds: this.history.length, ...(winners.length ? { winners: winners.map((w) => w.name) } : {}) });
     if (this.settings.scoring && this.history.length > 0) {
-      // Competition ranking: 1, 1, 3. Only people who voted at least once.
-      const board = this.scoreboardMembers().filter((m) => m.votedRounds > 0).sort((a, b) => b.score - a.score);
-      const results = board.map((m) => ({ player: { name: m.name }, place: 1 + board.filter((o) => o.score > m.score).length, score: m.score }));
+      // Places under the room's tie rule. Only people who voted at least once.
+      const results = this.ranking()
+        .filter((r) => r.member.votedRounds > 0)
+        .map((r) => ({ player: { name: r.member.name }, place: r.place, score: r.member.score }));
       if (results.length) void bg.reportResults({ roomCode: this.code, results }).catch(() => undefined);
     }
     log.info("room", "game over", { code: this.code, rounds: this.history.length, winners: winners.length });
@@ -588,10 +638,11 @@ export class Room implements KitRoom {
   }
 
   private scoreLines(): ScoreLine[] {
-    const list = this.scoreboardMembers();
-    if (this.settings.scoring) list.sort((a, b) => b.score - a.score || b.bestStreak - a.bestStreak || a.joinedAt - b.joinedAt);
-    else list.sort((a, b) => a.joinedAt - b.joinedAt);
-    return list.map((m) => ({ id: m.id, name: m.name, score: m.score, streak: m.streak, bestStreak: m.bestStreak, connected: m.socketIds.size > 0 }));
+    const line = (m: Member, place?: number): ScoreLine => ({ id: m.id, name: m.name, score: m.score, streak: m.streak, bestStreak: m.bestStreak, connected: m.socketIds.size > 0, ...(place ? { place } : {}) });
+    if (this.settings.scoring) return this.ranking().map((r) => line(r.member, r.place));
+    return this.scoreboardMembers()
+      .sort((a, b) => a.joinedAt - b.joinedAt)
+      .map((m) => line(m));
   }
 
   view(m: Member): RoomView {
@@ -621,6 +672,7 @@ export class Room implements KitRoom {
       result: r,
       players: this.scoreLines(),
       history: this.phase === "over" ? this.history : [],
+      outcome: this.phase === "over" && this.settings.scoring ? { winners: this.winners().map((w) => w.id), tiebreak: this.tiebreak() } : undefined,
       remaining: this.phase === "lobby" || this.phase === "over" ? this.packTotal() : this.deck.length,
       queued: this.queue.length,
       packs: runner ? listPacks() : [],

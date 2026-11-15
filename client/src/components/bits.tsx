@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import { percent, type Choice, type RoundResult, type ScoreLine, type Side, type Tally } from "@thisorthat/shared";
+import { percent, type Choice, type RoomView, type RoundResult, type ScoreLine, type Side, type Tally, type Tiebreak } from "@thisorthat/shared";
 import { mediaUrl } from "../socket";
 
 export function QrCode({ text, size = 160, className = "qr" }: { text: string; size?: number; className?: string }) {
@@ -110,13 +110,47 @@ export function Scoreboard({ players, scoring, streaks, limit, highlight }: { pl
     <ol className="scores">
       {list.map((p) => (
         <li key={p.id} className={`${p.id === highlight ? "me" : ""} ${p.connected ? "" : "away"}`}>
-          {scoring && <span className="scores-place">{1 + players.filter((o) => o.score > p.score).length}</span>}
+          {scoring && <span className="scores-place">{p.place ?? 1 + players.filter((o) => o.score > p.score).length}</span>}
           <span className="scores-name">{p.name}</span>
           {streaks && p.streak >= 2 && <span className="streak">🔥{p.streak}</span>}
           {scoring && <span className="scores-pts">{p.score}</span>}
         </li>
       ))}
     </ol>
+  );
+}
+
+const TIEBREAK_NOTE: Record<Tiebreak, string> = {
+  streak: "Tied on points: the longest streak with the majority breaks the tie.",
+  speed: "Tied on points and streaks: the fastest votes break the tie.",
+  joined: "A dead heat: whoever joined first takes it.",
+};
+
+const names = (list: string[]) => (list.length <= 1 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+
+/** The end screen's headline with scoring: who won, and how a tie was settled. */
+export function outcomeText(view: RoomView): { title: string; note?: string; youWon: boolean } | undefined {
+  const o = view.outcome;
+  if (!o) return undefined;
+  const winners = o.winners.map((id) => view.players.find((p) => p.id === id)?.name).filter((n): n is string => !!n);
+  if (!winners.length) return { title: "Nobody read the room this time!", youWon: false };
+  const youWon = o.winners.includes(view.you.id);
+  return {
+    title: winners.length === 1 ? `🏆 ${winners[0]} wins!` : `🏆 ${names(winners)} share the win!`,
+    note: o.tiebreak ? TIEBREAK_NOTE[o.tiebreak] : undefined,
+    youWon,
+  };
+}
+
+/** The winner line for phones (and "You won!" for the winners themselves). */
+export function Outcome({ view }: { view: RoomView }) {
+  const o = outcomeText(view);
+  if (!o) return null;
+  return (
+    <div className="outcome">
+      <p className="you-big">{o.youWon && view.you.role !== "table" ? (view.outcome!.winners.length > 1 ? "🏆 You share the win!" : "🏆 You win!") : o.title}</p>
+      {o.note && <p className="muted small">{o.note}</p>}
+    </div>
   );
 }
 

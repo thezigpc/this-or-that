@@ -28,6 +28,11 @@ export interface RoomSettings {
   scoring: boolean;
   /** Show streaks of consecutive majority picks (with scoring). */
   streaks: boolean;
+  /**
+   * Players tied on the top score: "share" (everyone tied wins) or "one" (a single winner:
+   * the longest streak, then the fastest votes on the questions they got right).
+   */
+  ties: TieRule;
   /** Questions per game; 0 = until the packs run out. */
   rounds: number;
   /** Move on by itself this many seconds after a reveal; 0 = wait for the host. */
@@ -35,6 +40,10 @@ export interface RoomSettings {
   /** Packs the questions come from (shuffled together). */
   packIds: string[];
 }
+
+export type TieRule = "share" | "one";
+/** Why the single winner won (ties: "one"). */
+export type Tiebreak = "streak" | "speed" | "joined";
 
 export const SETTINGS_LIMITS = {
   timerSeconds: { min: 3, max: 60 },
@@ -52,6 +61,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   timerSeconds: 10,
   scoring: false,
   streaks: true,
+  ties: "share",
   rounds: 10,
   autoNextSeconds: 0,
   packIds: [SAMPLE_PACK_ID],
@@ -85,6 +95,8 @@ export interface ScoreLine {
   streak: number;
   bestStreak: number;
   connected: boolean;
+  /** With scoring: the place under the room's tie rule (1, 1, 3 when ties share). */
+  place?: number;
 }
 
 export interface RoomView {
@@ -112,6 +124,8 @@ export interface RoomView {
   result?: RoundResult;
   /** Players by score (score order when scoring is on, join order otherwise). */
   players: ScoreLine[];
+  /** The end screen with scoring: who won (member ids), and the tiebreak that decided it. */
+  outcome?: { winners: string[]; tiebreak?: Tiebreak };
   /** Every finished question of this game, for the end screen. */
   history: RoundResult[];
   /** Questions left in the deck (packs) and typed by the host, waiting. */
@@ -231,6 +245,7 @@ export function sanitizeSettings(raw: unknown, knownPacks?: (id: string) => bool
   if (auto !== undefined) out.autoNextSeconds = auto;
   if (typeof r.scoring === "boolean") out.scoring = r.scoring;
   if (typeof r.streaks === "boolean") out.streaks = r.streaks;
+  if (r.ties === "share" || r.ties === "one") out.ties = r.ties;
   if (Array.isArray(r.packIds)) {
     const ids = [...new Set(r.packIds.filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64))]
       .filter((id) => !knownPacks || knownPacks(id))

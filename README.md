@@ -5,7 +5,9 @@ mountains?", "Tea or kava?"), everyone votes on their phone in a few seconds, an
 how the room split, with a playful reveal. About five minutes, no scores needed.
 
 - **Optional scoring:** "guess the majority", a point for picking what most people picked
-  (ties count for both sides). The split stays hidden until the reveal while it's on.
+  (ties count for both sides). The split stays hidden until the reveal while it's on. A tie
+  for first: everyone tied wins, or one winner (the longest streak, then the fastest votes),
+  the host's choice.
 - **Optional streaks:** 🔥 for picking with the majority several times in a row.
 - **Questions:** an original sample pack, the venue's own packs (CSV or JSON, uploaded on
   `/admin`), and questions the host types live. Each side can be a picture.

@@ -71,6 +71,8 @@ test("settings: bad values dropped, not thrown", () => {
   });
   assert.deepEqual(sanitizeSettings({ packIds: ["sample", "gone"] }, (id) => id === "sample"), { packIds: ["sample"] });
   assert.deepEqual(sanitizeSettings(null), {});
+  assert.deepEqual(sanitizeSettings({ ties: "one" }), { ties: "one" });
+  assert.deepEqual(sanitizeSettings({ ties: "everyone" }), {}, "unknown tie rule dropped");
 });
 
 test("majority: a, b, tie, nobody", () => {

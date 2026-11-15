@@ -6,7 +6,7 @@
 | | |
 |---|---|
 | Manifest | [bargames.json](bargames.json): `id: "thisorthat"`, port 3012, SDK level 3, `routing.basePath: true` |
-| Image | `ghcr.io/thezigpc/thisorthat:0.1.0` (tag = `version`) |
+| Image | `ghcr.io/thezigpc/thisorthat:0.2.0` (tag = `version`) |
 | SDK / kit | `vendor/bargames-sdk-0.15.0.tgz`, `vendor/bargames-gamekit-0.8.0.tgz` |
 | Level reached | **3** (branded, connected, controllable) |
 
@@ -40,7 +40,7 @@ Run against the mock box under `/thisorthat` (`mock-box . --base /thisorthat --p
 all checks passed
 ```
 
-`npx bargames validate .`: `✓ thisorthat@0.1.0 (sdk level 3)`, plus the expected "not pinned
+`npx bargames validate .`: `✓ thisorthat@0.2.0 (sdk level 3)`, plus the expected "not pinned
 by digest" warning.
 
 ## Events
@@ -51,18 +51,24 @@ own, all in [server/src/rooms/Room.ts](server/src/rooms/Room.ts):
 
 | Event | Where | `data` |
 |---|---|---|
-| `round_started` | `askNext()`, line 439 | `{ round, question: "Beach or Mountains?" }` |
-| `round_ended` | `reveal()`, line 491 | `{ round, question, a, b, votes, majority: "a" \| "b" \| "tie" \| null }` |
-| `winner` | `finish()`, line 535, scoring on, once per player tied on the top score (> 0) | `{ name, score }` |
-| `game_over` | `finish()`, line 536 | `{ rounds, winners? }` (`winners` only with scoring) |
-| `game_result` | `bg.reportResults()`, line 541, scoring on and at least one question played | the SDK's `GameResult`: places are competition ranking (1, 1, 3), `score` = majority picks; only people who voted at least once |
+| `round_started` | `askNext()`, line 449 | `{ round, question: "Beach or Mountains?" }` |
+| `round_ended` | `reveal()`, line 505 | `{ round, question, a, b, votes, majority: "a" \| "b" \| "tie" \| null }` |
+| `winner` | `finish()`, line 584, scoring on, once per player on place 1 (score > 0) | `{ name, score, tiebreak? }` (`tiebreak`: `streak`, `speed` or `joined`, only when the room picks one winner from a tie) |
+| `game_over` | `finish()`, line 585 | `{ rounds, winners? }` (`winners` only with scoring) |
+| `game_result` | `bg.reportResults()`, line 591, scoring on and at least one question played | the SDK's `GameResult`, `score` = majority picks, only people who voted at least once. Places follow the room's tie rule (below) |
 
 A game ends (`finish()`) when the host or the box ends it, when the round limit is reached,
 or when the packs run out. Closing a room mid-game (host Close room, the box's `end`, an
 admin close) finishes the game first, so `game_over` and the results still go out
-(`close()`, line 658). Idle closes, shutdowns and crashes don't.
+(`close()`, line 710). Idle closes, shutdowns and crashes don't.
 
 Privacy: only names the players typed, and the question text.
+
+**Ties for first (0.2.0, the host's setting `ties`, admin default too):**
+- `share` (default): everyone tied on the top score wins; places are competition ranking (1, 1, 3).
+- `one`: a single winner. Tiebreaks, in order: the longest streak with the majority, then the
+  fastest total voting time on the questions they got right, then whoever joined first. Places
+  follow the same order (1, 2, 3; players level on all of it share a place below 1).
 
 ## Commands
 
@@ -158,7 +164,7 @@ behind the mock box under `/thisorthat` with no console errors and no failed req
 
 ## Tests
 
-`npm test`: 34 tests (node:test, a throwaway server per spec): pack parsing, the game flow
+`npm test`: 39 tests (node:test, a throwaway server per spec): pack parsing, the game flow
 (votes, the split's visibility, scoring, ties, streaks, skip, the round limit, auto-next),
 reconnects, live questions with pictures (and refused fake pictures), the admin (setup, packs,
 pictures, persistence, closing rooms), and the box (standalone, `create_room`, every command

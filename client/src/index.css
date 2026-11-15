@@ -1107,3 +1107,20 @@ label {
     transition: none !important;
   }
 }
+
+/* ---------------------------------------------------------------- winners */
+.block {
+  display: block;
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+.outcome p {
+  margin: 0.2rem 0;
+}
+.settings .row small {
+  display: block;
+  font-weight: 400;
+}
+.tv-tiebreak {
+  margin-top: -1.5vh;
+}

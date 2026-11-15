@@ -1,5 +1,5 @@
 import type { Choice, RoomView } from "@thisorthat/shared";
-import { Countdown, quip, Scoreboard, SideImage, SplitBar } from "../components/bits";
+import { Countdown, Outcome, quip, Scoreboard, SideImage, SplitBar } from "../components/bits";
 import type { Act } from "./RoomPage";
 
 /** Two big buttons while voting; how the room split, and how you did, after. */
@@ -75,6 +75,7 @@ export function PlayerView({ view, skew, act }: { view: RoomView; skew: number; 
           <h2>That's a wrap!</h2>
           {s.scoring ? (
             <>
+              <Outcome view={view} />
               <p className="you-big">
                 You got {view.you.score} of {view.history.length} with the majority
               </p>

@@ -106,6 +106,67 @@ describe("a game", () => {
     assert.equal(lines.Cy.score, 1);
   });
 
+  // Ann and Bo both end on 3; Ann's best streak is 3, Bo's 2; Cy has 2.
+  const TIE_ROUNDS = [
+    ["a", "a", "b"],
+    ["a", "a", "b"],
+    ["a", "b", "a"],
+    ["a", "b", "b"],
+  ];
+  const playTieGame = async (ties) => {
+    const { host, players } = await setupRoom(server, ["Ann", "Bo", "Cy"]);
+    await host.ok("updateSettings", { scoring: true, ties, rounds: TIE_ROUNDS.length });
+    await host.ok("start");
+    for (const votes of TIE_ROUNDS) {
+      await players[0].waitFor((s) => s.phase === "question");
+      for (let i = 0; i < 3; i++) await players[i].ok("vote", votes[i]);
+      await host.waitFor((s) => s.phase === "reveal");
+      await host.ok("next");
+    }
+    return { host, players, over: await host.waitFor((s) => s.phase === "over", "over") };
+  };
+  const ids = (view) => Object.fromEntries(view.players.map((p) => [p.name, p.id]));
+
+  test("ties: everyone tied wins (the default)", async () => {
+    const { over, players } = await playTieGame("share");
+    assert.deepEqual(over.players.map((p) => [p.name, p.score, p.place]), [
+      ["Ann", 3, 1],
+      ["Bo", 3, 1],
+      ["Cy", 2, 3],
+    ]);
+    assert.deepEqual(over.outcome.winners.sort(), [ids(over).Ann, ids(over).Bo].sort());
+    assert.equal(over.outcome.tiebreak, undefined);
+    assert.deepEqual((await players[1].waitFor((s) => s.phase === "over")).outcome.winners.length, 2);
+  });
+
+  test("ties: one winner, by the longest streak", async () => {
+    const { over } = await playTieGame("one");
+    assert.deepEqual(over.players.map((p) => [p.name, p.place]), [
+      ["Ann", 1],
+      ["Bo", 2],
+      ["Cy", 3],
+    ]);
+    assert.deepEqual(over.outcome, { winners: [ids(over).Ann], tiebreak: "streak" });
+  });
+
+  test("ties: one winner, by the fastest votes when the streaks match", async () => {
+    const { host, players } = await setupRoom(server, ["Ann", "Bo"]);
+    await host.ok("updateSettings", { scoring: true, ties: "one", rounds: 1, timerSeconds: 5 });
+    await host.ok("start");
+    await players[1].waitFor((s) => s.phase === "question");
+    await players[1].ok("vote", "a");
+    await new Promise((r) => setTimeout(r, 300));
+    await players[0].ok("vote", "a"); // Ann is slower
+    await host.waitFor((s) => s.phase === "reveal");
+    await host.ok("next");
+    const over = await host.waitFor((s) => s.phase === "over");
+    assert.deepEqual(over.outcome, { winners: [ids(over).Bo], tiebreak: "speed" });
+    assert.deepEqual(over.players.map((p) => [p.name, p.place]), [
+      ["Bo", 1],
+      ["Ann", 2],
+    ]);
+  });
+
   test("skip drops the question without counting it; the round limit ends the game", async () => {
     const { host, players } = await setupRoom(server, ["Ann"]);
     await host.ok("updateSettings", { rounds: 2 });
