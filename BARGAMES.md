@@ -137,9 +137,16 @@ corner during play. The venue's theme colors the chrome; the two sides keep thei
   the room (24 per room, 600 KB each).
 - `USER node`, `/data` chowned to it. No outbound network from the server (https picture
   addresses in packs are loaded by the browsers).
-- **Read-only test:** Docker isn't installed on this PC, so the `docker run --read-only` test
-  hasn't been run here; the publish workflow builds the image from a clean checkout. The server
-  writes nothing outside `DATA_DIR` (checked in code: `content.ts`, the kit's JSON store).
+- **Read-only test:** Docker isn't installed on the development PC, so `docker run --read-only`
+  hasn't been run. The server writes nothing outside `DATA_DIR` (checked in code: `content.ts`,
+  the kit's JSON store).
+
+## Image
+
+- `ghcr.io/thezigpc/thisorthat:0.1.0`, built by the "Publish image" workflow from a clean
+  checkout of `main` (run 43668460063, green). The push-triggered run that followed
+  (43668461040) skipped it as already published.
+- The package is **public**: an anonymous manifest request answers `200`.
 
 ## Standalone
 
