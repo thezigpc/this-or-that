@@ -149,10 +149,10 @@ corner during play. The venue's theme colors the chrome; the two sides keep thei
 
 ## Image
 
-- `ghcr.io/thezigpc/thisorthat:0.1.0`, built by the "Publish image" workflow from a clean
-  checkout of `main` (run 43668460063, green). The push-triggered run that followed
-  (43668461040) skipped it as already published.
-- The package is **public**: an anonymous manifest request answers `200`.
+- `ghcr.io/thezigpc/thisorthat:0.2.0` (the tie setting), built by the "Publish image"
+  workflow from `main` at 8cf5be3 (run 43726991201, green).
+- `0.1.0`: run 43668460063 (476deee).
+- The package is **public**: anonymous manifest requests for both tags answer `200`.
 
 ## Standalone
 
