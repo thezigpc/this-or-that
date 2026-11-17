@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { JoinAddress } from "@bargames/gamekit/client";
 import { joinDisplay, joinUrl } from "@bargames/sdk/client";
 import { AUTO_NEXT_CHOICES, ROUND_CHOICES, TIMER_CHOICES, type Choice, type RoomSettings, type RoomView } from "@thisorthat/shared";
@@ -111,7 +111,8 @@ function GamePanel({ view, skew, act }: { view: RoomView; skew: number; act: Act
   );
 }
 
-function AskPanel({ view }: { view: RoomView }) {
+/** The host's own question. `onClose`: shown as a box over the big screen (with a close button). */
+export function AskPanel({ view, onAsked, onClose, className = "" }: { view: RoomView; onAsked?: () => void; onClose?: () => void; className?: string }) {
   const [a, setA] = useState("");
   const [b, setB] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -129,8 +130,13 @@ function AskPanel({ view }: { view: RoomView }) {
       setError((err as Error).message);
     }
   };
+  const aRef = useRef<HTMLInputElement>(null);
+  const bRef = useRef<HTMLInputElement>(null);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    // Enter on a field moves on to the next empty side first (on-screen keyboards too).
+    if (!a.trim()) return aRef.current?.focus();
+    if (!b.trim()) return bRef.current?.focus();
     setBusy(true);
     setError("");
     setNote("");
@@ -141,6 +147,7 @@ function AskPanel({ view }: { view: RoomView }) {
       setB("");
       setPrompt("");
       setImg({});
+      onAsked?.();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -150,7 +157,7 @@ function AskPanel({ view }: { view: RoomView }) {
   const asksNow = view.phase === "lobby" || view.phase === "reveal";
   const side = (c: Choice, value: string, set: (v: string) => void) => (
     <div className={`ask-side ask-${c}`}>
-      <input value={value} onChange={(e) => set(e.target.value.slice(0, 60))} placeholder={c === "a" ? "This (e.g. Beach)" : "That (e.g. Mountains)"} aria-label={c === "a" ? "This" : "That"} />
+      <input ref={c === "a" ? aRef : bRef} maxLength={60} value={value} onChange={(e) => set(e.target.value.slice(0, 60))} placeholder={c === "a" ? "This (e.g. Beach)" : "That (e.g. Mountains)"} aria-label={c === "a" ? "This" : "That"} />
       <label className="ask-photo">
         {img[c] ? <img src={img[c]} alt="" /> : <span>📷 Picture</span>}
         <input type="file" accept="image/*" onChange={(e) => void pickImage(c, e.target.files?.[0])} />
@@ -163,9 +170,16 @@ function AskPanel({ view }: { view: RoomView }) {
     </div>
   );
   return (
-    <form className="panel ask" onSubmit={submit}>
-      <h3>Ask your own</h3>
-      <input value={prompt} onChange={(e) => setPrompt(e.target.value.slice(0, 80))} placeholder="Lead-in (optional), e.g. Friday night:" aria-label="Lead-in" />
+    <form className={`panel ask ${className}`} onSubmit={submit}>
+      <div className="ask-head">
+        <h3>Ask your own</h3>
+        {onClose && (
+          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close" title="Close">
+            ✕
+          </button>
+        )}
+      </div>
+      <input maxLength={80} value={prompt} onChange={(e) => setPrompt(e.target.value.slice(0, 80))} placeholder="Lead-in (optional), e.g. Friday night:" aria-label="Lead-in" />
       <div className="ask-sides">
         {side("a", a, setA)}
         <span className="ask-or">or</span>
@@ -173,7 +187,7 @@ function AskPanel({ view }: { view: RoomView }) {
       </div>
       {error && <p className="error">{error}</p>}
       {note && <p className="note">{note}</p>}
-      <button className="btn btn-secondary" disabled={busy || !a.trim() || !b.trim()}>
+      <button className="btn btn-secondary" disabled={busy}>
         {busy ? "Sending…" : asksNow ? "Ask it now" : "Ask it next"}
       </button>
     </form>

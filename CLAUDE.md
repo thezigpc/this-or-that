@@ -24,7 +24,9 @@ don't edit it):
 - `server/src/bargames.ts`: the single SDK connection (kit `wireBarGames`, `HostSeats`).
 - `server/src/admin/`: kit admin auth; uploads have their own router (`/api/admin/upload`)
   because the kit's JSON parser stops at 16 KB.
-- `client/`: React + Vite. `RoomPage` picks `HostView` / `PlayerView` / `TableView` by role;
+- `client/`: React + Vite. The kit's `<OnScreenKeyboard />` is mounted in `main.tsx`: every
+  text field needs `maxLength` and a `<form onSubmit>`; nothing bottom-fixed should matter while
+  typing (toasts go to the top on keyboard screens). Test with `?bg_keyboard=1`. `RoomPage` picks `HostView` / `PlayerView` / `TableView` by role;
   `?role=table` joins as a TV with no prompt. The host can show the TV view on their own
   screen (📺) with controls.
 

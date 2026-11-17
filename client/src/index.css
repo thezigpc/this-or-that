@@ -1124,3 +1124,62 @@ label {
 .tv-tiebreak {
   margin-top: -1.5vh;
 }
+
+/* ---------------------------------------------------------------- the host's question box on the big screen */
+.ask-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ask-head h3 {
+  margin: 0;
+}
+.tv-ask {
+  /* Top of the screen: an on-screen keyboard (kit 0.10.0) opens along the bottom. */
+  position: fixed;
+  top: calc(2vh + var(--bargames-announcement-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(720px, 94vw);
+  z-index: 30;
+  font-size: 1rem;
+  box-shadow: 0 2vh 6vh #000a;
+  border-radius: var(--radius);
+}
+.tv-ask .ask-photo {
+  min-height: 52px;
+}
+.tv-ask .ask-photo img {
+  max-height: 80px;
+}
+.toast-top {
+  top: calc(16px + var(--bargames-announcement-top, 0px));
+  bottom: auto;
+}
+
+/* Touch-sized on any big screen: the host's controls and question box scale with the
+   screen's height (1080p ≈ 20px, 4K ≈ 40px), never below the phone size. */
+.tv-controls {
+  font-size: max(1rem, 1.9vh);
+  gap: 0.6em;
+  padding: 0.5em;
+}
+.tv-controls .btn {
+  min-height: max(44px, 5vh);
+}
+.tv-ask {
+  font-size: max(1rem, 1.8vh);
+  width: min(max(720px, 40vw), 94vw);
+}
+.tv-ask input:not([type="file"]),
+.tv-ask .btn,
+.tv-ask .icon-btn {
+  min-height: 2.6em;
+  font-size: 1em;
+}
+.tv-ask .icon-btn {
+  width: 2.6em;
+}
+.tv-ask .ask-photo {
+  min-height: 2.8em;
+}

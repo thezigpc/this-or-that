@@ -1,13 +1,13 @@
 # This or That on a Bar Games box
 
 **Report for the Bar Games side.** Guide followed:
-`C:\CodeProjects\GameBroker\integration\README.md` (SDK 0.15.0, game kit 0.8.0).
+`C:\CodeProjects\GameBroker\integration\README.md` (SDK 0.15.0, game kit 0.10.0).
 
 | | |
 |---|---|
 | Manifest | [bargames.json](bargames.json): `id: "thisorthat"`, port 3012, SDK level 3, `routing.basePath: true` |
-| Image | `ghcr.io/thezigpc/thisorthat:0.2.0` (tag = `version`) |
-| SDK / kit | `vendor/bargames-sdk-0.15.0.tgz`, `vendor/bargames-gamekit-0.8.0.tgz` |
+| Image | `ghcr.io/thezigpc/thisorthat:0.2.1` (tag = `version`) |
+| SDK / kit | `vendor/bargames-sdk-0.15.0.tgz`, `vendor/bargames-gamekit-0.10.0.tgz` |
 | Level reached | **3** (branded, connected, controllable) |
 
 ## `npx bargames check`
@@ -40,7 +40,7 @@ Run against the mock box under `/thisorthat` (`mock-box . --base /thisorthat --p
 all checks passed
 ```
 
-`npx bargames validate .`: `✓ thisorthat@0.2.0 (sdk level 3)`, plus the expected "not pinned
+`npx bargames validate .`: `✓ thisorthat@0.2.1 (sdk level 3)`, plus the expected "not pinned
 by digest" warning.
 
 ## Events
@@ -133,6 +133,23 @@ corner during play. The venue's theme colors the chrome; the two sides keep thei
 - `<BackToGames>` at the bottom of the landing page only.
 - `/admin` (`routes.admin`): the kit's admin auth with `trusted: bg.isStaff`,
   `venuePassword: bg.checkVenuePassword`, `onBox: bg.connected`; `<BoxAdminLink>` at the top.
+
+## On-screen keyboard (kit 0.10.0, 0.2.1)
+
+`<OnScreenKeyboard />` is mounted once at the root of the one client app (landing, join, room,
+TV, host big screen, admin). It only shows on touchscreens with no keyboard of their own (or
+with `?bg_keyboard=1`). Every text field is a real `<input>` with `maxLength`, inside a `<form
+onSubmit>`; the admin idle-minutes field is `inputMode="numeric"` (number pad).
+
+- **Host on this screen:** the big screen has "✎ Ask your own": the host's question box opens
+  at the top of the screen, clear of the keyboard, and Enter moves lead-in → This → That → send.
+  Its controls and the box scale with the screen height (touch-sized at 4K too).
+- Toasts move to the top of the screen where the keyboard is on (they were bottom-fixed).
+- Checked on the mock box with `?bg_keyboard=1` at 1920×1080 and 3840×2160: the landing name,
+  the room code and name (Enter joins), the host's question typed fully on the keys (asked and
+  shown on the TV), the admin password. The focused field, its submit button and the question
+  box all stay above the keyboard; nothing it shouldn't cover. A phone width without the flag
+  gets no keyboard and no body padding.
 
 ## Container
 

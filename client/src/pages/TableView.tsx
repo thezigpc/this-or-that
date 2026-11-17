@@ -5,7 +5,9 @@ import { Countdown, outcomeText, QrCode, quip, Scoreboard, secondsLeft, SideImag
 import { toggleFullscreen } from "../fullscreen";
 import { useGameName } from "../useGameName";
 import { useVenue } from "../useVenue";
+import { AskPanel } from "./HostView";
 import type { Act } from "./RoomPage";
+import { useState } from "react";
 
 /**
  * The big screen: the question, both sides, the live split, the reveal, and the join QR and
@@ -194,7 +196,16 @@ function TvOver({ view }: { view: RoomView }) {
 
 /** The host running the game from this big screen (an iPad or laptop on a TV). */
 function TvControls({ view, act, onHostControls }: { view: RoomView; act: Act; onHostControls: () => void }) {
+  // The host's own question, typed right here (a touchscreen on the box gets the kit's
+  // on-screen keyboard under it). The box sits at the top, clear of the keyboard.
+  const [asking, setAsking] = useState(false);
   return (
+    <>
+    {asking && (
+      <div className="tv-ask">
+        <AskPanel view={view} onAsked={() => setAsking(false)} onClose={() => setAsking(false)} />
+      </div>
+    )}
     <nav className="tv-controls">
       {view.phase === "lobby" && (
         <button className="btn btn-primary" onClick={() => act("start")}>
@@ -229,6 +240,10 @@ function TvControls({ view, act, onHostControls }: { view: RoomView; act: Act; o
       <button className="btn btn-ghost" onClick={onHostControls}>
         ⚙ Host controls
       </button>
+      <button className="btn btn-ghost" onClick={() => setAsking(!asking)} aria-expanded={asking}>
+        ✎ Ask your own
+      </button>
     </nav>
+    </>
   );
 }

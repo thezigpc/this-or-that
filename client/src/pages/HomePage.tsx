@@ -91,11 +91,12 @@ export function HomePage() {
             autoCapitalize="characters"
             autoComplete="off"
             className="code-input"
+            maxLength={4}
           />
         </label>
         <label>
           Your name
-          <input value={name} onChange={(e) => setName(e.target.value.slice(0, 24))} placeholder="Name" autoComplete="nickname" />
+          <input maxLength={24} value={name} onChange={(e) => setName(e.target.value.slice(0, 24))} placeholder="Name" autoComplete="nickname" />
         </label>
         <button className="btn btn-primary btn-big" disabled={busy || code.length !== 4 || !name.trim()}>
           {cohostInvite ? "Join as co-host" : "Join"}

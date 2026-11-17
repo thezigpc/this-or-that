@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useRoomConnection } from "@bargames/gamekit/client";
+import { useOnScreenKeyboard, useRoomConnection } from "@bargames/gamekit/client";
 import { isOnBox, markSharedScreen, tableMode, type TableModeController } from "@bargames/sdk/client";
 import type { JoinResult, RoomView } from "@thisorthat/shared";
 import { toggleFullscreen } from "../fullscreen";
@@ -97,6 +97,8 @@ function InRoom({ code }: { code: string }) {
       }),
   });
   const { act, toast, setToast } = useAction();
+  // A screen with the kit's on-screen keyboard: toasts go to the top, clear of it.
+  const keyboardScreen = useOnScreenKeyboard();
   useEffect(() => {
     const onNotice = (n: { message: string }) => setToast(n.message);
     socket.on("notice", onNotice);
@@ -204,7 +206,7 @@ function InRoom({ code }: { code: string }) {
       {role === "player" && <PlayerView view={view} skew={skew} act={act} />}
       {role === "table" && <TableView view={view} skew={skew} act={act} boxTv={boxTv} />}
       {toast && (
-        <div className="toast" role="alert" onClick={() => setToast(null)}>
+        <div className={`toast ${keyboardScreen ? "toast-top" : ""}`} role="alert" onClick={() => setToast(null)}>
           {toast}
         </div>
       )}

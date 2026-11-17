@@ -148,12 +148,12 @@ function PasswordForm({ status, onToken }: { status: AdminStatus; onToken: (t: s
       )}
       <label>
         Password
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={setup ? "new-password" : "current-password"} autoFocus />
+        <input type="password" maxLength={200} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={setup ? "new-password" : "current-password"} autoFocus />
       </label>
       {setup && (
         <label>
           Confirm password
-          <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+          <input type="password" maxLength={200} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
         </label>
       )}
       {error && <p className="error">{error}</p>}
@@ -327,7 +327,7 @@ function Dashboard({ token, onSignOut, onExpired }: { token: string; onSignOut: 
           }}
         >
           <span>Close rooms idle for</span>
-          <input className="num" type="number" min={5} value={idle} onChange={(e) => setIdle(e.target.value)} /> minutes
+          <input className="num" inputMode="numeric" maxLength={5} value={idle} onChange={(e) => setIdle(e.target.value.replace(/D/g, ""))} aria-label="Minutes" /> minutes
           <button className="btn btn-ghost">Save</button>
         </form>
       </section>
@@ -381,7 +381,7 @@ function PacksPanel({ data, token, run }: { data: AdminOverview; token: string; 
       </ul>
       <form className="upload" onSubmit={upload}>
         <h3>Upload a pack (CSV or JSON)</h3>
-        <input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Pack name (optional)" />
+        <input maxLength={40} value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} placeholder="Pack name (optional)" />
         <input type="file" accept=".csv,.json,.txt,.tsv,text/csv,application/json" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <button className="btn btn-secondary" disabled={!file}>
           Upload
