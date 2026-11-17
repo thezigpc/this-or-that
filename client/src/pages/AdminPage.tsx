@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { AUTO_NEXT_CHOICES, ROUND_CHOICES, TIMER_CHOICES, type AdminOverview, type RoomSettings } from "@thisorthat/shared";
 import { BoxAdminLink, staffSignIn } from "@bargames/gamekit/client";
@@ -188,9 +188,14 @@ function Dashboard({ token, onSignOut, onExpired }: { token: string; onSignOut: 
     const t = setInterval(load, 5000);
     return () => clearInterval(t);
   }, [load]);
+  // Fill the idle minutes once, from the first overview. Refilling whenever the field is empty
+  // put the old value back while someone cleared it to type a new one.
+  const idleFilled = useRef(false);
   useEffect(() => {
-    if (data && idle === "") setIdle(String(data.settings.roomIdleMinutes));
-  }, [data, idle]);
+    if (!data || idleFilled.current) return;
+    idleFilled.current = true;
+    setIdle(String(data.settings.roomIdleMinutes));
+  }, [data]);
 
   const run = async (fn: () => Promise<string | void>) => {
     setError("");

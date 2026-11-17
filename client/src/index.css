@@ -200,7 +200,7 @@ label {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(20px + var(--bargames-announcement-bottom, 0px));
+  bottom: calc(20px + var(--bargames-announcement-bottom, 0px) + var(--bargames-keyboard, 0px));
   transform: translateX(-50%);
   max-width: min(92vw, 520px);
   background: #111;
@@ -1052,7 +1052,7 @@ label {
 .tv-controls {
   position: absolute;
   left: 50%;
-  bottom: calc(1.5vh + var(--bargames-announcement-bottom, 0px));
+  bottom: calc(1.5vh + var(--bargames-announcement-bottom, 0px) + var(--bargames-keyboard, 0px));
   transform: translateX(-50%);
   display: flex;
   gap: 0.6rem;

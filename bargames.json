@@ -1,10 +1,10 @@
 {
   "id": "thisorthat",
   "name": "This or That",
-  "version": "0.2.1",
-  "image": "ghcr.io/thezigpc/thisorthat:0.2.1",
+  "version": "0.2.2",
+  "image": "ghcr.io/thezigpc/thisorthat:0.2.2",
   "port": 3012,
-  "sdk": { "version": "0.15.0", "level": 3 },
+  "sdk": { "version": "0.16.0", "level": 3 },
   "routing": { "basePath": true },
   "routes": {
     "player": "/",

@@ -1,13 +1,13 @@
 # This or That on a Bar Games box
 
 **Report for the Bar Games side.** Guide followed:
-`C:\CodeProjects\GameBroker\integration\README.md` (SDK 0.15.0, game kit 0.10.0).
+`C:\CodeProjects\GameBroker\integration\README.md` (SDK 0.16.0, game kit 0.10.6).
 
 | | |
 |---|---|
 | Manifest | [bargames.json](bargames.json): `id: "thisorthat"`, port 3012, SDK level 3, `routing.basePath: true` |
-| Image | `ghcr.io/thezigpc/thisorthat:0.2.1` (tag = `version`) |
-| SDK / kit | `vendor/bargames-sdk-0.15.0.tgz`, `vendor/bargames-gamekit-0.10.0.tgz` |
+| Image | `ghcr.io/thezigpc/thisorthat:0.2.2` (tag = `version`) |
+| SDK / kit | `vendor/bargames-sdk-0.16.0.tgz`, `vendor/bargames-gamekit-0.10.6.tgz` |
 | Level reached | **3** (branded, connected, controllable) |
 
 ## `npx bargames check`
@@ -40,7 +40,7 @@ Run against the mock box under `/thisorthat` (`mock-box . --base /thisorthat --p
 all checks passed
 ```
 
-`npx bargames validate .`: `✓ thisorthat@0.2.1 (sdk level 3)`, plus the expected "not pinned
+`npx bargames validate .`: `✓ thisorthat@0.2.2 (sdk level 3)`, plus the expected "not pinned
 by digest" warning.
 
 ## Events
@@ -145,6 +145,14 @@ onSubmit>`; the admin idle-minutes field is `inputMode="numeric"` (number pad).
   at the top of the screen, clear of the keyboard, and Enter moves lead-in → This → That → send.
   Its controls and the box scale with the screen height (touch-sized at 4K too).
 - Toasts move to the top of the screen where the keyboard is on (they were bottom-fixed).
+- **0.2.2 (kit 0.10.6):** the toasts and the big screen's control bar add
+  `var(--bargames-keyboard, 0px)` to their bottom offset. Checked again with `?bg_keyboard=1` at
+  1080p and 4K: the dropdowns (host settings, admin defaults) open the kit's big-button list
+  and set the value; the admin password field (autofocus) opens the keyboard by itself and
+  types without an automatic capital; idle minutes gets the number pad and saves on Enter.
+  The room code keeps `autoCapitalize="characters"`: it's uppercased as typed anyway, and
+  phones get a capitals keyboard for it. Fixed on the way: the admin's idle-minutes field
+  refilled itself with the old value while being cleared.
 - Checked on the mock box with `?bg_keyboard=1` at 1920×1080 and 3840×2160: the landing name,
   the room code and name (Enter joins), the host's question typed fully on the keys (asked and
   shown on the TV), the admin password. The focused field, its submit button and the question
